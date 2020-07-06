@@ -1,17 +1,55 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
+import { bindActionCreators } from 'redux';
+import { connect } from 'react-redux';
+import { MdAddShoppingCart } from 'react-icons/md';
 
 import api from '../../services/api';
+import * as CartActions from '../../store/modules/cart/actions';
 
-import Container from '../../components/Container';
+import { ProductList } from './styles';
 
-import { Text } from './styles';
+function Main({ addToCartRequest, amount }) {
+  const [products, setProducts] = useState([]);
 
-function Main() {
+  useEffect(() => {
+    async function proccess() {
+      const { data } = await api.get('/products');
+
+      setProducts(data);
+    }
+
+    proccess();
+  }, []);
+
   return (
-    <Container>
-      <Text>Hello World</Text>
-    </Container>
+    <ProductList>
+      {products.map((product, key) => (
+        <li key={key}>
+          <img src={product.image} alt="Tênis" />
+          <strong>{product.title}</strong>
+          <span>{product.formattedPrice}</span>
+
+          <button type="button" onClick={() => addToCartRequest(product.id)}>
+            <div>
+              <MdAddShoppingCart size={16} color="#FFF" />
+              {amount[product.id] || 0}
+            </div>
+            <span>ADICIONAR AO CARRINHO</span>
+          </button>
+        </li>
+      ))}
+    </ProductList>
   );
 }
 
-export default Main;
+const mapStateToProps = (state) => ({
+  amount: state.cart.reduce((amount, product) => {
+    amount[product.id] = product.amount;
+    return amount;
+  }, {}),
+});
+
+const mapDispatchToProps = (dispatch) =>
+  bindActionCreators(CartActions, dispatch);
+
+export default connect(mapStateToProps, mapDispatchToProps)(Main);
